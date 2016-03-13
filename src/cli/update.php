@@ -89,7 +89,7 @@ class JoomlaCliUpdate extends JApplicationCli
 
 	/**
 	 * Gives Information about all installed extensions
-     */
+	 */
 	public function infoInstalledVersions()
 	{
 		// Get All extensions
@@ -104,18 +104,17 @@ class JoomlaCliUpdate extends JApplicationCli
 		$toUpdate = [];
 		$upToDate = [];
 
-		foreach($extensions as &$extension)
+		foreach ($extensions as &$extension)
 		{
-
-			if (array_key_exists($extension['extension_id'],$updates))
+			if (array_key_exists($extension['extension_id'], $updates))
 			{
-				$toUpdate = $extension;
+				$toUpdate                = $extension;
 				$toUpdate['newVersion']  = $updates[$toUpdate['extension_id']]['version'];
 				$toUpdate['needsUpdate'] = true;
 			}
 			else
 			{
-				$upToDate = $extension;
+				$upToDate                   = $extension;
 				$upToDate['currentVersion'] = json_decode($upToDate['manifest_cache'], true)['version'];
 				$upToDate['newVersion']     = $upToDate['currentVersion'];
 				$upToDate['needsUpdate']    = false;
@@ -129,7 +128,7 @@ class JoomlaCliUpdate extends JApplicationCli
 
 	/**
 	 * Update Core Joomla
-     */
+	 */
 	public function updateCore()
 	{
 		return $this->updateExtension(CORE_EXTENSION_ID);
@@ -196,14 +195,14 @@ class JoomlaCliUpdate extends JApplicationCli
 	 */
 	private function getUpdateIds($eid = null)
 	{
-		$db = JFactory::getDbo();
+		$db    = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
 		$query->select('update_id')
-				->from('#__updates')
-				->where($db->qn('extension_id') . ' <> 0');
+			->from('#__updates')
+			->where($db->qn('extension_id') . ' <> 0');
 
-		if (! is_null($eid))
+		if (!is_null($eid))
 		{
 			$query->where($db->qn('extension_id') . ' = ' . $db->q($eid));
 		}
@@ -220,7 +219,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	 */
 	private function getUpdates()
 	{
-		$db = JFactory::getDbo();
+		$db    = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
 		$query->select('*')
@@ -236,10 +235,10 @@ class JoomlaCliUpdate extends JApplicationCli
 	 * Get all extensions
 	 *
 	 * @return   mixed
-     */
+	 */
 	private function getAllExtensions()
 	{
-		$db = JFactory::getDbo();
+		$db    = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
 		$query->select('*')
