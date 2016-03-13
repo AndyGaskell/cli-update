@@ -72,37 +72,72 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		if ($this->input->get('core', ''))
 		{
-			$this->updateCore();
+			return $this->updateCore();
 		}
 
-		if ($this->input->get('extension', ''))
+		$param = $this->input->get('extension', '');
+		if ($param == '')
 		{
-			$this->updateExtensions();
+			return $this->updateExtensions();
 		}
+
+		if ($param != '')
+		{
+			$eid = (int) $param;
+			
+			return $this->updateExtension($eid);
+		}
+
 
 		if ($this->input->get('info', ''))
 		{
-			$this->infoInstalledVersions();
+			return $this->infoInstalledVersions();
 		}
 
 		if ($this->input->get('sitename', ''))
 		{
-			$this->getSiteInfo();
+			return $this->getSiteInfo();
 		}
 
 		$param = $this->input->get('install', '', 'raw');
 
 		if ($param != '')
 		{
-			$this->installExtension($param);
+			return $this->installExtension($param);
 		}
 
 		$param = $this->input->get('remove', '');
 
 		if ($param != '')
 		{
-			$this->removeExtension($param);
+			return $this->removeExtension($param);
 		}
+	}
+
+	/**
+	 * Remove an extension
+	 *
+	 * @param   int  $param  Extention id
+	 *
+	 * @return  bool
+	 */
+	protected function removeExtension($param)
+	{
+		$id = (int) $param;
+
+		$result = true;
+
+		$installer = JInstaller::getInstance();
+		$row = JTable::getInstance('extension');
+
+		$row->load($id);
+
+		if ($row->type && $row->type != 'language')
+		{
+			$result = $installer->uninstall($row->type, $id);
+		}
+
+		return $result;
 	}
 
 	/**
