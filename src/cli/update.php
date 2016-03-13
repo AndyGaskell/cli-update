@@ -51,7 +51,10 @@ JLoader::import('joomla.application.component.helper');
 class JoomlaCliUpdate extends JApplicationCli
 {
 	/** @var InstallerModelUpdate */
-	protected $installer = null;
+	protected $updater = null;
+
+	/** @var JApplicationSite */
+	protected $app = null;
 
 	/**
 	 * Entry point for the script
@@ -61,10 +64,10 @@ class JoomlaCliUpdate extends JApplicationCli
 	public function doExecute()
 	{
 		$_SERVER['HTTP_HOST'] = 'localhost';
-		JFactory::getApplication('site');
+		$this->app = JFactory::getApplication('site');
 
 		JModelLegacy::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_installer/models');
-		$this->installer = JModelLegacy::getInstance('Update', 'InstallerModel');
+		$this->updater = JModelLegacy::getInstance('Update', 'InstallerModel');
 
 		if ($this->input->get('core', ''))
 		{
@@ -85,8 +88,54 @@ class JoomlaCliUpdate extends JApplicationCli
 		{
 			$this->getSiteInfo();
 		}
+
+		$param = $this->input->get('install', '', 'raw');
+
+		if ($param != '')
+		{
+			$this->installExtension($param);
+		}
 	}
 
+	/**
+	 * @param $param
+	 *
+	 * @return bool
+	 */
+	public function installExtension($param)
+	{
+		$method = $this->getMethod($param);
+
+		if ($method == 'url')
+		{
+			$packagefile = JInstallerHelper::downloadPackage($param);
+			$packagefile = JPATH_BASE . '/tmp/' . basename($packagefile);
+		}
+
+		if ($method == 'folder')
+		{
+			$packagefile = $param;
+		}
+
+		$package = JInstallerHelper::unpack($packagefile, true);
+
+		if ($package['type'] === false)
+		{
+			return false;
+		}
+
+		$jInstaller = JInstaller::getInstance();
+
+		$jInstaller->install($package['extractdir']);
+
+		if ($method == 'url')
+		{
+			JInstallerHelper::cleanupInstall($packagefile, $package['extractdir']);
+		}
+
+		return true;
+	}
+	
 	/**
 	 * Gives Information about all installed extensions
 	 */
@@ -95,7 +144,7 @@ class JoomlaCliUpdate extends JApplicationCli
 		// Get All extensions
 		$extensions = $this->getAllExtensions();
 
-		$this->installer->purge();
+		$this->updater->purge();
 
 		$this->findUpdates(0);
 
@@ -106,9 +155,10 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		foreach ($extensions as &$extension)
 		{
-			if (array_key_exists($extension['extension_id'], $updates))
+			if (array_key_exists($extension['extension_id'],$updates))
 			{
-				$toUpdate                = $extension;
+				$toUpdate = $extension;
+				$toUpdate['currentVersion'] = json_decode($toUpdate['manifest_cache'], true)['version'];
 				$toUpdate['newVersion']  = $updates[$toUpdate['extension_id']]['version'];
 				$toUpdate['needsUpdate'] = true;
 			}
@@ -139,16 +189,16 @@ class JoomlaCliUpdate extends JApplicationCli
 	 */
 	public function updateExtension($eid)
 	{
-		$this->installer->purge();
+		$this->updater->purge();
 
 		$this->findUpdates($eid);
 
 		// Joomla Core update
 		$update_ids = $this->getUpdateIds($eid);
 
-		$this->installer->update($update_ids);
+		$this->updater->update($update_ids);
 
-		$result = $this->installer->getState('result');
+		$result = $this->updater->getState('result');
 
 		return $result;
 	}
@@ -158,7 +208,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	 */
 	public function updateExtensions()
 	{
-		$this->installer->purge();
+		$this->updater->purge();
 
 		$this->findUpdates();
 
@@ -168,8 +218,8 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		foreach ($update_ids as $update_id)
 		{
-			$this->installer->update([$update_id]);
-			$result[$update_id] = $this->installer->getState('result');
+			$this->updater->update([$update_id]);
+			$result[$update_id] = $this->updater->getState('result');
 		}
 
 		return $result;
@@ -256,6 +306,16 @@ class JoomlaCliUpdate extends JApplicationCli
 		$info->sitename = JFactory::getApplication()->config->get('sitename');
 
 		$this->out(json_encode($info));
+	}
+
+	private function getMethod($param)
+	{
+		if (is_file($param))
+		{
+			return 'folder';
+		}
+
+		return 'url';
 	}
 }
 
