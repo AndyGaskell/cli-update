@@ -43,6 +43,7 @@ require_once JPATH_CONFIGURATION . '/configuration.php';
 // Load the JApplicationCli class
 JLoader::import('joomla.application.cli');
 JLoader::import('joomla.application.component.helper');
+JLoader::import('joomla.filesystem.folder');
 
 /**
  *
@@ -95,6 +96,13 @@ class JoomlaCliUpdate extends JApplicationCli
 		{
 			$this->installExtension($param);
 		}
+
+		$param = $this->input->get('remove', '');
+
+		if ($param != '')
+		{
+			$this->removeExtension($param);
+		}
 	}
 
 	/**
@@ -138,9 +146,18 @@ class JoomlaCliUpdate extends JApplicationCli
 	
 	/**
 	 * Gives Information about all installed extensions
-	 */
+     */
 	public function infoInstalledVersions()
 	{
+		$lang = JFactory::getLanguage();
+
+		$langFiles = $this->getLanguageFiles();
+		foreach ($langFiles as $file)
+		{
+			$file = str_replace(array('en-GB.', '.ini'), '', $file);
+			$lang->load($file, JPATH_ADMINISTRATOR, 'en-GB', true, false);
+		}
+
 		// Get All extensions
 		$extensions = $this->getAllExtensions();
 
@@ -153,21 +170,27 @@ class JoomlaCliUpdate extends JApplicationCli
 		$toUpdate = [];
 		$upToDate = [];
 
-		foreach ($extensions as &$extension)
+		foreach($extensions as &$extension)
 		{
+			$extension['name'] = JText::_($extension['name']);
+
 			if (array_key_exists($extension['extension_id'],$updates))
 			{
-				$toUpdate = $extension;
-				$toUpdate['currentVersion'] = json_decode($toUpdate['manifest_cache'], true)['version'];
-				$toUpdate['newVersion']  = $updates[$toUpdate['extension_id']]['version'];
-				$toUpdate['needsUpdate'] = true;
+				$tmp = $extension;
+				$tmp['currentVersion'] = json_decode($tmp['manifest_cache'], true)['version'];
+				$tmp['newVersion']     = $updates[$tmp['extension_id']]['version'];
+				$tmp['needsUpdate']    = true;
+
+				$toUpdate[] = $tmp;
 			}
 			else
 			{
-				$upToDate                   = $extension;
-				$upToDate['currentVersion'] = json_decode($upToDate['manifest_cache'], true)['version'];
-				$upToDate['newVersion']     = $upToDate['currentVersion'];
-				$upToDate['needsUpdate']    = false;
+				$tmp = $extension;
+				$tmp['currentVersion'] = json_decode($tmp['manifest_cache'], true)['version'];
+				$tmp['newVersion']     = $tmp['currentVersion'];
+				$tmp['needsUpdate']    = false;
+
+				$upToDate[] = $tmp;
 			}
 		}
 
@@ -176,9 +199,16 @@ class JoomlaCliUpdate extends JApplicationCli
 		$this->out(json_encode($result));
 	}
 
+
+	private function getLanguageFiles()
+	{
+		return JFolder::files(JPATH_ADMINISTRATOR . '/language/en-GB/', '\.sys\.ini');
+	}
+
+
 	/**
 	 * Update Core Joomla
-	 */
+     */
 	public function updateCore()
 	{
 		return $this->updateExtension(CORE_EXTENSION_ID);
@@ -245,14 +275,14 @@ class JoomlaCliUpdate extends JApplicationCli
 	 */
 	private function getUpdateIds($eid = null)
 	{
-		$db    = JFactory::getDbo();
+		$db = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
 		$query->select('update_id')
-			->from('#__updates')
-			->where($db->qn('extension_id') . ' <> 0');
+				->from('#__updates')
+				->where($db->qn('extension_id') . ' <> 0');
 
-		if (!is_null($eid))
+		if (! is_null($eid))
 		{
 			$query->where($db->qn('extension_id') . ' = ' . $db->q($eid));
 		}
@@ -269,7 +299,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	 */
 	private function getUpdates()
 	{
-		$db    = JFactory::getDbo();
+		$db = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
 		$query->select('*')
@@ -285,10 +315,10 @@ class JoomlaCliUpdate extends JApplicationCli
 	 * Get all extensions
 	 *
 	 * @return   mixed
-	 */
+     */
 	private function getAllExtensions()
 	{
-		$db    = JFactory::getDbo();
+		$db = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
 		$query->select('*')
