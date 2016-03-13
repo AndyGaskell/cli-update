@@ -76,6 +76,9 @@ class JoomlaCliUpdate extends JApplicationCli
 		}
 	}
 
+	/**
+	 * Gives Information about all installed extensions
+     */
 	public function infoInstalledVersions()
 	{
 		// Get All extensions
@@ -87,20 +90,30 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		$updates = $this->getUpdates();
 
+		$toUpdate = [];
+		$upToDate = [];
+
 		foreach($extensions as &$extension)
 		{
-			$extension['currentVersion'] = json_decode($extension['manifest_cache'], true)['version'];
-			$extension['newVersion']     = $extension['currentVersion'];
-			$extension['needsUpdate']    = false;
 
 			if (array_key_exists($extension['extension_id'],$updates))
 			{
-				$extension['newVersion']  = $updates[$extension['extension_id']]['version'];
-				$extension['needsUpdate'] = true;
+				$toUpdate = $extension;
+				$toUpdate['newVersion']  = $updates[$toUpdate['extension_id']]['version'];
+				$toUpdate['needsUpdate'] = true;
+			}
+			else
+			{
+				$upToDate = $extension;
+				$upToDate['currentVersion'] = json_decode($upToDate['manifest_cache'], true)['version'];
+				$upToDate['newVersion']     = $upToDate['currentVersion'];
+				$upToDate['needsUpdate']    = false;
 			}
 		}
 
-		$this->out(json_encode($extensions));
+		$result = array_merge($toUpdate, $upToDate);
+
+		$this->out(json_encode($result));
 	}
 
 	/**
@@ -108,18 +121,24 @@ class JoomlaCliUpdate extends JApplicationCli
      */
 	public function updateCore()
 	{
+		return $this->updateExtension(CORE_EXTENSION_ID);
+	}
+
+	/**
+	 * Update a single extension
+	 */
+	public function updateExtension($eid)
+	{
 		$this->installer->purge();
 
-		$this->findUpdates();
+		$this->findUpdates($eid);
 
 		// Joomla Core update
-		$update_ids = $this->getUpdateIds(CORE_EXTENSION_ID);
+		$update_ids = $this->getUpdateIds($eid);
 
 		$this->installer->update($update_ids);
 
 		$result = $this->installer->getState('result');
-
-		$this->installer->purge();
 
 		return $result;
 	}
@@ -131,7 +150,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	{
 		$this->installer->purge();
 
-		$this->findUpdates(0);
+		$this->findUpdates();
 
 		// Joomla Core update
 		$update_ids = $this->getUpdateIds();
@@ -143,25 +162,17 @@ class JoomlaCliUpdate extends JApplicationCli
 			$result[$update_id] = $this->installer->getState('result');
 		}
 
-		$this->installer->purge();
-
 		return $result;
 	}
+
 	/**
 	 * Find updates
 	 *
-	 * @param bool $onlyCore
-     *
-     */
-	private function findUpdates($onlyCore = true)
+	 * @param int $eid
+	 */
+	private function findUpdates($eid = 0)
 	{
 		$updater = JUpdater::getInstance();
-		$eid     = 0;
-
-		if ($onlyCore)
-		{
-			$eid = CORE_EXTENSION_ID;
-		}
 
 		// Fills potential updates into the table '#__updates for ALL extensions
 		$updater->findUpdates($eid);
