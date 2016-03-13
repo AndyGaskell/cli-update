@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package    Joomla.Cli
+ *
+ * @copyright  Copyright (C) 2005 - 2016 Open Source Matters, Inc. All rights reserved.
+ * @license    GNU General Public License version 2 or later; see LICENSE.txt
+ */
 
 if (php_sapi_name() != 'cli')
 {
@@ -73,6 +79,11 @@ class JoomlaCliUpdate extends JApplicationCli
 		if ($this->input->get('info', ''))
 		{
 			$this->infoInstalledVersions();
+		}
+
+		if ($this->input->get('sitename', ''))
+		{
+			$this->getSiteInfo();
 		}
 	}
 
@@ -237,6 +248,15 @@ class JoomlaCliUpdate extends JApplicationCli
 		$db->setQuery($query);
 
 		return $db->loadAssocList('extension_id');
+	}
+
+	public function getSiteInfo()
+	{
+		$info = new stdClass();
+
+		$info->sitename = JFactory::getApplication()->config->get('sitename');
+
+		$this->out(json_encode($info));
 	}
 }
 
