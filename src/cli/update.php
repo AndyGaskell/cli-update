@@ -216,7 +216,7 @@ class JoomlaCliUpdate extends JApplicationCli
 				$tmp['newVersion']     = $updates[$tmp['extension_id']]['version'];
 				$tmp['needsUpdate']    = true;
 
-				$toUpdatearray() = $tmp;
+				$toUpdate[] = $tmp;
 			}
 			else
 			{
@@ -225,7 +225,7 @@ class JoomlaCliUpdate extends JApplicationCli
 				$tmp['newVersion']     = $tmp['currentVersion'];
 				$tmp['needsUpdate']    = false;
 
-				$upToDatearray() = $tmp;
+				$upToDate[] = $tmp;
 			}
 		}
 
