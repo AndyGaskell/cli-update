@@ -239,13 +239,34 @@ class JoomlaCliUpdate extends JApplicationCli
 		return JFolder::files(JPATH_ADMINISTRATOR . '/language/en-GB/', '\.sys\.ini');
 	}
 
-
 	/**
 	 * Update Core Joomla
-     */
+	 */
 	public function updateCore()
 	{
-		return $this->updateExtension(CORE_EXTENSION_ID);
+		$this->updater->purge();
+
+		$this->findUpdates(CORE_EXTENSION_ID);
+
+		JModelLegacy::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_joomlaupdate/models');
+		$jUpdate = JModelLegacy::getInstance('Default', 'JoomlaupdateModel');
+
+		$updateInformation = $jUpdate->getUpdateInformation();
+
+		$packagefile = JInstallerHelper::downloadPackage($updateInformation['object']->downloadurl->_data);
+		$packagefile = JPATH_BASE . '/tmp/' . basename($packagefile);
+
+		$package = JInstallerHelper::unpack($packagefile, true);
+
+		JFolder::copy($package['extractdir'], JPATH_BASE, '', true, true);
+
+		$jInstaller = JInstaller::getInstance();
+
+		$jInstaller->install($package['extractdir']);
+
+		JInstallerHelper::cleanupInstall($packagefile, $package['extractdir']);
+
+		return true;
 	}
 
 	/**
