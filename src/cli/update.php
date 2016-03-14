@@ -64,6 +64,7 @@ require_once JPATH_CONFIGURATION . '/configuration.php';
 JLoader::import('joomla.application.cli');
 JLoader::import('joomla.application.component.helper');
 JLoader::import('joomla.filesystem.folder');
+JLoader::import('joomla.filesystem.file');
 
 /**
  * Manage Joomla extensions and core on the commandline
@@ -281,12 +282,12 @@ class JoomlaCliUpdate extends JApplicationCli
 	 */
 	public function updateCore()
 	{
-		$this->updater->purge();
-
-		$this->findUpdates(CORE_EXTENSION_ID);
-
 		JModelLegacy::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_joomlaupdate/models');
 		$jUpdate = JModelLegacy::getInstance('Default', 'JoomlaupdateModel');
+
+		$jUpdate->purge();
+
+		$jUpdate->refreshUpdates(true);
 
 		$updateInformation = $jUpdate->getUpdateInformation();
 
@@ -297,11 +298,21 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		JFolder::copy($package['extractdir'], JPATH_BASE, '', true, true);
 
-		$jInstaller = JInstaller::getInstance();
+		$result = $jUpdate->finaliseUpgrade();
 
-		$jInstaller->install($package['extractdir']);
+		if ($result)
+		{
+			// Remove the xml
 
-		JInstallerHelper::cleanupInstall($packagefile, $package['extractdir']);
+			if (file_exists(JPATH_BASE . '/joomla.xml'))
+			{
+				JFile::delete(JPATH_BASE . '/joomla.xml');
+			}
+
+			JInstallerHelper::cleanupInstall($packagefile, $package['extractdir']);
+
+			return true;
+		}
 
 		return true;
 	}
