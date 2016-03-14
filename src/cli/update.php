@@ -89,13 +89,13 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		if ($extension == '')
 		{
-			return $this->updateExtensions();
+			return $this->out(json_encode($this->updateExtensions()));
 		}
 		else
 		{
 			$eid = (int) $extension;
 			
-			return $this->updateExtension($eid);
+			return $this->out(json_encode($this->updateExtension($eid)));
 		}
 
 		$install = $this->input->get('install', '', 'raw');
