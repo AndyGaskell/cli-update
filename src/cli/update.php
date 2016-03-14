@@ -202,8 +202,8 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		$updates = $this->getUpdates();
 
-		$toUpdate = [];
-		$upToDate = [];
+		$toUpdate = array();
+		$upToDate = array();
 
 		foreach($extensions as &$extension)
 		{
@@ -216,7 +216,7 @@ class JoomlaCliUpdate extends JApplicationCli
 				$tmp['newVersion']     = $updates[$tmp['extension_id']]['version'];
 				$tmp['needsUpdate']    = true;
 
-				$toUpdate[] = $tmp;
+				$toUpdatearray() = $tmp;
 			}
 			else
 			{
@@ -225,7 +225,7 @@ class JoomlaCliUpdate extends JApplicationCli
 				$tmp['newVersion']     = $tmp['currentVersion'];
 				$tmp['needsUpdate']    = false;
 
-				$upToDate[] = $tmp;
+				$upToDatearray() = $tmp;
 			}
 		}
 
@@ -279,7 +279,7 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		// Joomla Core update
 		$update_ids = $this->getUpdateIds();
-		$result     = [];
+		$result     = array();
 
 		foreach ($update_ids as $update_id)
 		{
