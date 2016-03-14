@@ -14,7 +14,9 @@ php cli/update.php
 
 --sitename
 
---install=[FULL_PATH_TO_A_FILE|URL]
+--installpackage=[ARCHIVE_FILE_IN_TMP]
+
+--installurl=[ARCHIVE_FILE_URL]
 
 --remove=ID_OF_THE_EXTENSION
 
@@ -22,11 +24,11 @@ php cli/update.php
 
 --core: 
 
-Update the Joomla! Core CMS
+Updates the Joomla! Core CMS
 
 --extension[=ID_OF_THE_EXTENSION]:
 
-Update all or a single Extension
+Updates all or a single Extension
 
 --info
 
@@ -34,12 +36,16 @@ Gives Information about all installed Extensions as a json
 
 --sitename
 
-Return the sitename
+Returns the sitename
+
+--installpackage=[ARCHIVE_FILE_IN_TMP]
+
+Installs an extension, provide the name of the the package file which is placed in the tmp folder
 
 --install=[FULL_PATH_TO_A_FILE|URL]
 
-Install a exentension, provide the full path to the package file or an URL to the package
+Installs an extension, provide the URL to the archive package
 
 --remove=ID_OF_THE_EXTENSION
 
-Remove a extension, you have to provide the extension id
+Removes an extension, provide the extension id
