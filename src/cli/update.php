@@ -373,7 +373,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	{
 		$info = new stdClass();
 
-		$info->sitename = JFactory::getApplication()->config->get('sitename');
+		$info->sitename = JFactory::getApplication()->getCfg('sitename');
 
 		return json_encode($info);
 	}
