@@ -9,23 +9,31 @@
 /**
  * Manage and Update Joomla installation and extensions
  *
- * Called with --core:       php update.php --core
- *                           Updates the core
+ * Called with --core:              php update.php --core
+ *                                  Updates the core
  *
- * Called with --extensions: php update.php --extensions
- *                           Updates all extensions
+ * Called with --extensions:        php update.php --extensions
+ *                                  Updates all extensions
  *
- * Called with --extension:  php update.php --extension=extension_id (int)
- *                           Updates the extension with the given id
+ * Called with --extension:         php update.php --extension=extension_id (int)
+ *                                  Updates the extension with the given id
  *
- * Called with --sitename:   php update.php --sitename
- *                           Outputs the sitename from the configuration.php as json object
+ * Called with --sitename:          php update.php --sitename
+ *                                  Outputs the sitename from the configuration.php as json object
  *
- * Called with --info:       php update.php --info
- *                           Outputs json encoded informations about installed extensions and available extensions
+ * Called with --info:              php update.php --info
+ *                                  Outputs json encoded informations about installed extensions and
+ *                                  available extensions
  *
- * Called with --remove:     php update.php --remove=extension_id (int)
- *                           Removes the extension with the given id
+ * Called with --installpackage:    php update.php --installpackage=package.zip (path)
+ *                                  Installs archived extension package that has to be placed in the tmp folder
+ *
+ *
+ * Called with --installurl:        php update.php --installurl=url/package.zip (url)
+ *                                  Installs archived extension package from a URL
+ *
+ * Called with --remove:            php update.php --remove=extension_id (int)
+ *                                  Removes the extension with the given id
  */
 
 if (php_sapi_name() != 'cli')
@@ -100,6 +108,8 @@ class JoomlaCliUpdate extends JApplicationCli
 		if ($this->input->get('sitename', false))
 		{
 			$this->out($this->getSiteInfo());
+
+			return;
 		}
 
 		JModelLegacy::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_installer/models');
@@ -108,32 +118,49 @@ class JoomlaCliUpdate extends JApplicationCli
 		if ($this->input->get('core', false))
 		{
 			$this->out(json_encode(array('700' => $this->updateCore())));
+
+			return;
 		}
 
 		if ($this->input->get('info', false))
 		{
-			return $this->out(json_encode($this->infoInstalledVersions()));
+			$this->out(json_encode($this->infoInstalledVersions()));
+
+			return;
 		}
 
 		if ($this->input->get('extensions', false))
 		{
-			return $this->out(json_encode($this->updateExtensions()));
+			$this->out(json_encode($this->updateExtensions()));
+
+			return;
 		}
 
-		$extension = $this->input->get('extension', false);
+		$extension_id = $this->input->get('extension', false, 'INTEGER');
 
-		if ($extension !== false)
+		if (!empty($extension_id))
 		{
-			$eid = (int) $extension;
+			$this->out(json_encode($this->updateExtension($extension_id)));
 
-			return $this->out(json_encode($this->updateExtension($eid)));
+			return;
 		}
 
-		$install = $this->input->get('install', '', 'raw');
+		$installPackage = $this->input->get('installpackage', '', 'PATH');
 
-		if ($install != '')
+		if (!empty($installPackage))
 		{
-			return $this->installExtension($install);
+			$this->out(json_encode(array('result' => $this->installExtension($installPackage, 'folder'))));
+
+			return;
+		}
+
+		$installUrl = $this->input->get('installurl', '', 'STRING');
+
+		if (!empty($installUrl))
+		{
+			$this->out(json_encode(array('result' => $this->installExtension($installUrl, 'url'))));
+
+			return;
 		}
 
 		$remove = $this->input->get('remove', '');
@@ -147,7 +174,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Remove an extension
 	 *
-	 * @param   int $param Extension id
+	 * @param   int  $param Extension id
 	 *
 	 * @return  bool
 	 */
@@ -173,23 +200,20 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Installs an extension (From directory or URL)
 	 *
-	 * @param   string $param - path or url
+	 * @param   string  $path
+	 * @param   string  $method
 	 *
-	 * @return  bool  Success
+	 * @return  bool
 	 */
-	public function installExtension($param)
+	public function installExtension($path, $method)
 	{
-		$method = $this->getMethod($param);
-
-		$packagefile = $param;
-
 		if ($method == 'url')
 		{
-			$packagefile = JInstallerHelper::downloadPackage($param);
-			$packagefile = JPATH_BASE . '/tmp/' . basename($packagefile);
+			$path = JInstallerHelper::downloadPackage($path);
 		}
 
-		$package = JInstallerHelper::unpack($packagefile, true);
+		$path    = JPATH_BASE . '/tmp/' . basename($path);
+		$package = JInstallerHelper::unpack($path, true);
 
 		if ($package['type'] === false)
 		{
@@ -197,15 +221,10 @@ class JoomlaCliUpdate extends JApplicationCli
 		}
 
 		$jInstaller = JInstaller::getInstance();
+		$result     = $jInstaller->install($package['extractdir']);
+		JInstallerHelper::cleanupInstall($path, $package['extractdir']);
 
-		$jInstaller->install($package['extractdir']);
-
-		if ($method == 'url')
-		{
-			JInstallerHelper::cleanupInstall($packagefile, $package['extractdir']);
-		}
-
-		return true;
+		return $result;
 	}
 
 	/**
@@ -319,7 +338,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Update a single extension
 	 *
-	 * @param   int $eid - The extension_id
+	 * @param   int  $eid - The extension_id
 	 *
 	 * @return  bool  success
 	 */
@@ -341,7 +360,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Update Extensions
 	 *
-	 * @return  array  - Array with success information for each extension
+	 * @return  array  Array with success information for each extension
 	 */
 	public function updateExtensions()
 	{
@@ -366,7 +385,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Find updates
 	 *
-	 * @param  int $eid The extension id
+	 * @param  int  $eid The extension id
 	 *
 	 * @return  void
 	 */
@@ -381,7 +400,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Get the update
 	 *
-	 * @param   int|null $eid The extenion id or null for all
+	 * @param   int|null  $eid The extenion id or null for all
 	 *
 	 * @return  object|array
 	 */
@@ -466,23 +485,6 @@ class JoomlaCliUpdate extends JApplicationCli
 		$info->sitename = JFactory::getApplication()->getCfg('sitename');
 
 		return json_encode($info);
-	}
-
-	/**
-	 * Get the install method (folder or url)
-	 *
-	 * @param   string $param An URL or path
-	 *
-	 * @return  string
-	 */
-	private function getMethod($param)
-	{
-		if (is_file($param))
-		{
-			return 'folder';
-		}
-
-		return 'url';
 	}
 }
 
