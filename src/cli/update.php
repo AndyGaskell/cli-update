@@ -403,6 +403,11 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		$result = $db->loadObjectList();
 
+		if (!$result)
+		{
+			return array();
+		}
+
 		if ($eid)
 		{
 			// Return only update id
