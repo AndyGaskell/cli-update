@@ -9,23 +9,23 @@
 /**
  * Manage and Update Joomla installation and extensions
  *
- * Called with --core:      php update.php --core
- *                          Updates the core
+ * Called with --core:       php update.php --core
+ *                           Updates the core
  *
- * Called with --extension: php update.php --extension
- *                          Updates all extensions
+ * Called with --extensions: php update.php --extensions
+ *                           Updates all extensions
  *
- * Called with --extension: php update.php --extension extension_id (int)
- *                          Updates the extension with the given id
+ * Called with --extension:  php update.php --extension=extension_id (int)
+ *                           Updates the extension with the given id
  *
- * Called with --sitename:  php update.php --sitename
- *                          Outputs the sitename from the configuration.php as json object
+ * Called with --sitename:   php update.php --sitename
+ *                           Outputs the sitename from the configuration.php as json object
  *
- * Called with --info:      php update.php --info
- *                          Outputs json encoded informations about installed extensions and available extensions
+ * Called with --info:       php update.php --info
+ *                           Outputs json encoded informations about installed extensions and available extensions
  *
- * Called with --remove:    php update.php --remove extension_id (int)
- *                          Removes the extension with the given id
+ * Called with --remove:     php update.php --remove=extension_id (int)
+ *                           Removes the extension with the given id
  */
 
 if (php_sapi_name() != 'cli')
@@ -112,16 +112,17 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		if ($this->input->get('info', false))
 		{
-			return $this->infoInstalledVersions();
+			return $this->out(json_encode($this->infoInstalledVersions()));
 		}
 
-		$extension = $this->input->get('extension', '');
-
-		if ($extension == '')
+		if ($this->input->get('extensions', false))
 		{
 			return $this->out(json_encode($this->updateExtensions()));
 		}
-		else
+
+		$extension = $this->input->get('extension', false);
+
+		if ($extension !== false)
 		{
 			$eid = (int) $extension;
 			
@@ -260,9 +261,7 @@ class JoomlaCliUpdate extends JApplicationCli
 			}
 		}
 
-		$result = array_merge($toUpdate, $upToDate);
-
-		$this->out(json_encode($result));
+		return array_merge($toUpdate, $upToDate);
 	}
 
 	/**
