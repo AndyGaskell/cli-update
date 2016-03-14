@@ -80,37 +80,36 @@ class JoomlaCliUpdate extends JApplicationCli
 			return $this->updateCore();
 		}
 
-		$param = $this->input->get('extension', '');
-		if ($param == '')
-		{
-			return $this->updateExtensions();
-		}
-
-		if ($param != '')
-		{
-			$eid = (int) $param;
-			
-			return $this->updateExtension($eid);
-		}
-
-
 		if ($this->input->get('info', ''))
 		{
 			return $this->infoInstalledVersions();
 		}
 
-		$param = $this->input->get('install', '', 'raw');
+		$extension = $this->input->get('extension', '');
 
-		if ($param != '')
+		if ($extension == '')
 		{
-			return $this->installExtension($param);
+			return $this->updateExtensions();
+		}
+		else
+		{
+			$eid = (int) $extension;
+			
+			return $this->updateExtension($eid);
 		}
 
-		$param = $this->input->get('remove', '');
+		$install = $this->input->get('install', '', 'raw');
 
-		if ($param != '')
+		if ($install != '')
 		{
-			return $this->removeExtension($param);
+			return $this->installExtension($install);
+		}
+
+		$remove = $this->input->get('remove', '');
+
+		if ($remove != '')
+		{
+			return $this->removeExtension($remove);
 		}
 	}
 
