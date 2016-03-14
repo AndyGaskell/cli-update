@@ -67,6 +67,11 @@ class JoomlaCliUpdate extends JApplicationCli
 		$_SERVER['HTTP_HOST'] = 'localhost';
 		$this->app = JFactory::getApplication('site');
 
+		if ($this->input->get('sitename', ''))
+		{
+			return $this->out($this->getSiteInfo());
+		}
+
 		JModelLegacy::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_installer/models');
 		$this->updater = JModelLegacy::getInstance('Update', 'InstallerModel');
 
@@ -92,11 +97,6 @@ class JoomlaCliUpdate extends JApplicationCli
 		if ($this->input->get('info', ''))
 		{
 			return $this->infoInstalledVersions();
-		}
-
-		if ($this->input->get('sitename', ''))
-		{
-			return $this->getSiteInfo();
 		}
 
 		$param = $this->input->get('install', '', 'raw');
@@ -364,13 +364,18 @@ class JoomlaCliUpdate extends JApplicationCli
 		return $db->loadAssocList('extension_id');
 	}
 
+	/**
+	 * Get the sitename json encoded out of the Joomla config
+	 *
+	 * @return  string   The json encoded result
+	 */
 	public function getSiteInfo()
 	{
 		$info = new stdClass();
 
 		$info->sitename = JFactory::getApplication()->config->get('sitename');
 
-		$this->out(json_encode($info));
+		return json_encode($info);
 	}
 
 	private function getMethod($param)
