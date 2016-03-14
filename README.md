@@ -42,7 +42,7 @@ Returns the sitename
 
 Installs an extension, provide the name of the the package file which is placed in the tmp folder
 
---install=[FULL_PATH_TO_A_FILE|URL]
+--installurl=[URL]
 
 Installs an extension, provide the URL to the archive package
 
