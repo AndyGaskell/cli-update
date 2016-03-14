@@ -330,10 +330,9 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		$this->findUpdates($eid);
 
-		// Joomla Core update
-		$update_ids = $this->getUpdateIds($eid);
+		$update_id = $this->getUpdateIds($eid);
 
-		$this->updater->update($update_ids);
+		$this->updater->update($update_id);
 
 		$result = $this->updater->getState('result');
 
@@ -351,14 +350,15 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		$this->findUpdates();
 
-		// Joomla Core update
-		$update_ids = $this->getUpdateIds();
+		// Get the objects
+		$extensions = $this->getUpdateIds();
+
 		$result     = array();
 
-		foreach ($update_ids as $update_id)
+		foreach ($extensions as $e)
 		{
-			$this->updater->update([$update_id]);
-			$result[$update_id] = $this->updater->getState('result');
+			$this->updater->update([$e->update_id]);
+			$result[$e->extension_id] = $this->updater->getState('result');
 		}
 
 		return $result;
@@ -384,25 +384,33 @@ class JoomlaCliUpdate extends JApplicationCli
 	 *
 	 * @param   int|null  $eid  The extenion id or null for all
 	 *
-	 * @return  array
+	 * @return  object|array
 	 */
 	private function getUpdateIds($eid = null)
 	{
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
-		$query->select('update_id')
+		$query->select('update_id, extension_id')
 				->from('#__updates')
 				->where($db->qn('extension_id') . ' <> 0');
 
-		if (! is_null($eid))
+		if (!is_null($eid))
 		{
 			$query->where($db->qn('extension_id') . ' = ' . $db->q($eid));
 		}
 
 		$db->setQuery($query);
 
-		return $db->loadColumn();
+		$result = $db->loadObjectList();
+
+		if ($eid)
+		{
+			// Return only update id
+			return (array) $result[0]->update_id;
+		}
+
+		return $result;
 	}
 
 	/**
