@@ -6,6 +6,28 @@
  * @license    GNU General Public License version 2 or later; see LICENSE.txt
  */
 
+/**
+ * Manage and Update Joomla installation and extensions
+ *
+ * Called with --core:      php update.php --core
+ *                          Updates the core
+ *
+ * Called with --extension: php update.php --extension
+ *                          Updates all extensions
+ *
+ * Called with --extension: php update.php --extension extension_id (int)
+ *                          Updates the extension with the given id
+ *
+ * Called with --sitename:  php update.php --sitename
+ *                          Outputs the sitename from the configuration.php as json object
+ *
+ * Called with --info:      php update.php --info
+ *                          Outputs json encoded informations about installed extensions and available extensions
+ *
+ * Called with --remove:    php update.php --remove extension_id (int)
+ *                          Removes the extension with the given id
+ */
+
 if (php_sapi_name() != 'cli')
 {
 	exit(1);
@@ -17,9 +39,7 @@ const _JEXEC = 1;
 // Define core extension id
 const CORE_EXTENSION_ID = 700;
 
-error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT);
 error_reporting(E_ALL);
-ini_set('display_errors', 0);
 ini_set('display_errors', 1);
 
 // Load system defines
@@ -46,15 +66,24 @@ JLoader::import('joomla.application.component.helper');
 JLoader::import('joomla.filesystem.folder');
 
 /**
+ * Manage Joomla extensions and core on the commandline
  *
  * @since  3.5.1
  */
 class JoomlaCliUpdate extends JApplicationCli
 {
-	/** @var InstallerModelUpdate */
+	/**
+	 * The Installer Model
+	 *
+	 * @var    InstallerModelUpdate
+	 */
 	protected $updater = null;
 
-	/** @var JApplicationSite */
+	/**
+	 * Joomla! Site Application
+	 *
+	 * @var    JApplicationSite
+	 */
 	protected $app = null;
 
 	/**
@@ -67,7 +96,7 @@ class JoomlaCliUpdate extends JApplicationCli
 		$_SERVER['HTTP_HOST'] = 'localhost';
 		$this->app = JFactory::getApplication('site');
 
-		if ($this->input->get('sitename', ''))
+		if ($this->input->get('sitename', false))
 		{
 			return $this->out($this->getSiteInfo());
 		}
@@ -75,12 +104,12 @@ class JoomlaCliUpdate extends JApplicationCli
 		JModelLegacy::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_installer/models');
 		$this->updater = JModelLegacy::getInstance('Update', 'InstallerModel');
 
-		if ($this->input->get('core', ''))
+		if ($this->input->get('core', false))
 		{
 			return $this->updateCore();
 		}
 
-		if ($this->input->get('info', ''))
+		if ($this->input->get('info', false))
 		{
 			return $this->infoInstalledVersions();
 		}
@@ -116,7 +145,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Remove an extension
 	 *
-	 * @param   int  $param  Extention id
+	 * @param   int  $param  Extension id
 	 *
 	 * @return  bool
 	 */
@@ -140,23 +169,22 @@ class JoomlaCliUpdate extends JApplicationCli
 	}
 
 	/**
-	 * @param $param
+	 * Installs an extension (From directory or URL)
 	 *
-	 * @return bool
+	 * @param   string  $param  - path or url
+	 *
+	 * @return  bool  Success
 	 */
 	public function installExtension($param)
 	{
 		$method = $this->getMethod($param);
 
+		$packagefile = $param;
+
 		if ($method == 'url')
 		{
 			$packagefile = JInstallerHelper::downloadPackage($param);
 			$packagefile = JPATH_BASE . '/tmp/' . basename($packagefile);
-		}
-
-		if ($method == 'folder')
-		{
-			$packagefile = $param;
 		}
 
 		$package = JInstallerHelper::unpack($packagefile, true);
@@ -179,7 +207,10 @@ class JoomlaCliUpdate extends JApplicationCli
 	}
 	
 	/**
-	 * Gives Information about all installed extensions
+	 * Gets the Information about all installed extensions from the database and checked the database.
+	 * Outputs to the cli as json string
+	 *
+	 * @return  void
      */
 	public function infoInstalledVersions()
 	{
@@ -233,7 +264,11 @@ class JoomlaCliUpdate extends JApplicationCli
 		$this->out(json_encode($result));
 	}
 
-
+	/**
+	 * Get the list of available language sys files
+	 *
+	 * @return  array  List of languages
+	 */
 	private function getLanguageFiles()
 	{
 		return JFolder::files(JPATH_ADMINISTRATOR . '/language/en-GB/', '\.sys\.ini');
@@ -241,6 +276,8 @@ class JoomlaCliUpdate extends JApplicationCli
 
 	/**
 	 * Update Core Joomla
+	 *
+	 * @return  bool  success
 	 */
 	public function updateCore()
 	{
@@ -271,6 +308,10 @@ class JoomlaCliUpdate extends JApplicationCli
 
 	/**
 	 * Update a single extension
+	 *
+	 * @param   int  $eid  - The extension_id
+	 *
+	 * @return  bool  success
 	 */
 	public function updateExtension($eid)
 	{
@@ -290,6 +331,8 @@ class JoomlaCliUpdate extends JApplicationCli
 
 	/**
 	 * Update Extensions
+	 *
+	 * @return  array  - Array with success information for each extension
 	 */
 	public function updateExtensions()
 	{
@@ -313,7 +356,9 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Find updates
 	 *
-	 * @param int $eid
+	 * @param  int  $eid  The extension id
+	 *
+	 * @return  void
 	 */
 	private function findUpdates($eid = 0)
 	{
@@ -326,7 +371,9 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Get the update
 	 *
-	 * @return array
+	 * @param   int|null  $eid  The extenion id or null for all
+	 *
+	 * @return  array
 	 */
 	private function getUpdateIds($eid = null)
 	{
@@ -348,9 +395,9 @@ class JoomlaCliUpdate extends JApplicationCli
 	}
 
 	/**
-	 * Get updates
+	 * Get available updates from #__updates
 	 *
-	 * @return array
+	 * @return  array  AssocList with available updates
 	 */
 	private function getUpdates()
 	{
@@ -369,7 +416,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Get all extensions
 	 *
-	 * @return   mixed
+	 * @return  array  AssocList with all extensions from #__extensions
      */
 	private function getAllExtensions()
 	{
@@ -387,7 +434,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Get the sitename json encoded out of the Joomla config
 	 *
-	 * @return  string   The json encoded result
+	 * @return  string  The json encoded result
 	 */
 	public function getSiteInfo()
 	{
@@ -398,6 +445,13 @@ class JoomlaCliUpdate extends JApplicationCli
 		return json_encode($info);
 	}
 
+	/**
+	 * Get the install method (folder or url)
+	 *
+	 * @param   string  $param  An URL or path
+	 *
+	 * @return  string
+	 */
 	private function getMethod($param)
 	{
 		if (is_file($param))
