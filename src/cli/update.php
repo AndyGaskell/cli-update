@@ -95,11 +95,11 @@ class JoomlaCliUpdate extends JApplicationCli
 	public function doExecute()
 	{
 		$_SERVER['HTTP_HOST'] = 'localhost';
-		$this->app = JFactory::getApplication('site');
+		$this->app            = JFactory::getApplication('site');
 
 		if ($this->input->get('sitename', false))
 		{
-			return $this->out($this->getSiteInfo());
+			$this->out($this->getSiteInfo());
 		}
 
 		JModelLegacy::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_installer/models');
@@ -107,7 +107,7 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		if ($this->input->get('core', false))
 		{
-			return $this->updateCore();
+			$this->out(json_encode(array('700' => $this->updateCore())));
 		}
 
 		if ($this->input->get('info', false))
@@ -125,7 +125,7 @@ class JoomlaCliUpdate extends JApplicationCli
 		if ($extension !== false)
 		{
 			$eid = (int) $extension;
-			
+
 			return $this->out(json_encode($this->updateExtension($eid)));
 		}
 
@@ -147,7 +147,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Remove an extension
 	 *
-	 * @param   int  $param  Extension id
+	 * @param   int $param Extension id
 	 *
 	 * @return  bool
 	 */
@@ -158,7 +158,7 @@ class JoomlaCliUpdate extends JApplicationCli
 		$result = true;
 
 		$installer = JInstaller::getInstance();
-		$row = JTable::getInstance('extension');
+		$row       = JTable::getInstance('extension');
 
 		$row->load($id);
 
@@ -173,7 +173,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Installs an extension (From directory or URL)
 	 *
-	 * @param   string  $param  - path or url
+	 * @param   string $param - path or url
 	 *
 	 * @return  bool  Success
 	 */
@@ -207,13 +207,13 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		return true;
 	}
-	
+
 	/**
 	 * Gets the Information about all installed extensions from the database and checked the database.
 	 * Outputs to the cli as json string
 	 *
 	 * @return  void
-     */
+	 */
 	public function infoInstalledVersions()
 	{
 		$lang = JFactory::getLanguage();
@@ -237,13 +237,13 @@ class JoomlaCliUpdate extends JApplicationCli
 		$toUpdate = array();
 		$upToDate = array();
 
-		foreach($extensions as &$extension)
+		foreach ($extensions as &$extension)
 		{
 			$extension['name'] = JText::_($extension['name']);
 
-			if (array_key_exists($extension['extension_id'],$updates))
+			if (array_key_exists($extension['extension_id'], $updates))
 			{
-				$tmp = $extension;
+				$tmp                   = $extension;
 				$tmp['currentVersion'] = json_decode($tmp['manifest_cache'], true)['version'];
 				$tmp['newVersion']     = $updates[$tmp['extension_id']]['version'];
 				$tmp['needsUpdate']    = true;
@@ -252,7 +252,7 @@ class JoomlaCliUpdate extends JApplicationCli
 			}
 			else
 			{
-				$tmp = $extension;
+				$tmp                   = $extension;
 				$tmp['currentVersion'] = json_decode($tmp['manifest_cache'], true)['version'];
 				$tmp['newVersion']     = $tmp['currentVersion'];
 				$tmp['needsUpdate']    = false;
@@ -290,36 +290,36 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		$updateInformation = $jUpdate->getUpdateInformation();
 
-		$packagefile = JInstallerHelper::downloadPackage($updateInformation['object']->downloadurl->_data);
-		$packagefile = JPATH_BASE . '/tmp/' . basename($packagefile);
-
-		$package = JInstallerHelper::unpack($packagefile, true);
-
-		JFolder::copy($package['extractdir'], JPATH_BASE, '', true, true);
-
-		$result = $jUpdate->finaliseUpgrade();
-
-		if ($result)
+		if (!empty($updateInformation['object']))
 		{
-			// Remove the xml
+			$packagefile = JInstallerHelper::downloadPackage($updateInformation['object']->downloadurl->_data);
+			$packagefile = JPATH_BASE . '/tmp/' . basename($packagefile);
+			$package = JInstallerHelper::unpack($packagefile, true);
+			JFolder::copy($package['extractdir'], JPATH_BASE, '', true, true);
 
-			if (file_exists(JPATH_BASE . '/joomla.xml'))
+			$result = $jUpdate->finaliseUpgrade();
+
+			if ($result)
 			{
-				JFile::delete(JPATH_BASE . '/joomla.xml');
+				// Remove the xml
+				if (file_exists(JPATH_BASE . '/joomla.xml'))
+				{
+					JFile::delete(JPATH_BASE . '/joomla.xml');
+				}
+
+				JInstallerHelper::cleanupInstall($packagefile, $package['extractdir']);
+
+				return true;
 			}
-
-			JInstallerHelper::cleanupInstall($packagefile, $package['extractdir']);
-
-			return true;
 		}
 
-		return true;
+		return false;
 	}
 
 	/**
 	 * Update a single extension
 	 *
-	 * @param   int  $eid  - The extension_id
+	 * @param   int $eid - The extension_id
 	 *
 	 * @return  bool  success
 	 */
@@ -352,7 +352,7 @@ class JoomlaCliUpdate extends JApplicationCli
 		// Get the objects
 		$extensions = $this->getUpdateIds();
 
-		$result     = array();
+		$result = array();
 
 		foreach ($extensions as $e)
 		{
@@ -366,7 +366,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Find updates
 	 *
-	 * @param  int  $eid  The extension id
+	 * @param  int $eid The extension id
 	 *
 	 * @return  void
 	 */
@@ -381,18 +381,18 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Get the update
 	 *
-	 * @param   int|null  $eid  The extenion id or null for all
+	 * @param   int|null $eid The extenion id or null for all
 	 *
 	 * @return  object|array
 	 */
 	private function getUpdateIds($eid = null)
 	{
-		$db = JFactory::getDbo();
+		$db    = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
 		$query->select('update_id, extension_id')
-				->from('#__updates')
-				->where($db->qn('extension_id') . ' <> 0');
+			->from('#__updates')
+			->where($db->qn('extension_id') . ' <> 0');
 
 		if (!is_null($eid))
 		{
@@ -424,7 +424,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	 */
 	private function getUpdates()
 	{
-		$db = JFactory::getDbo();
+		$db    = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
 		$query->select('*')
@@ -440,10 +440,10 @@ class JoomlaCliUpdate extends JApplicationCli
 	 * Get all extensions
 	 *
 	 * @return  array  AssocList with all extensions from #__extensions
-     */
+	 */
 	private function getAllExtensions()
 	{
-		$db = JFactory::getDbo();
+		$db    = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
 		$query->select('*')
@@ -471,7 +471,7 @@ class JoomlaCliUpdate extends JApplicationCli
 	/**
 	 * Get the install method (folder or url)
 	 *
-	 * @param   string  $param  An URL or path
+	 * @param   string $param An URL or path
 	 *
 	 * @return  string
 	 */
