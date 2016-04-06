@@ -375,8 +375,16 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		foreach ($extensions as $e)
 		{
-			$this->updater->update([$e->update_id]);
-			$result[$e->extension_id] = $this->updater->getState('result');
+			// Check if ist core or extension
+			if ($e->extension_id == CORE_EXTENSION_ID)
+			{
+				$result[$e->extension_id] = $this->updateCore();
+			}
+			else
+			{
+				$this->updater->update([$e->update_id]);
+				$result[$e->extension_id] = $this->updater->getState('result');
+			}
 		}
 
 		return $result;
