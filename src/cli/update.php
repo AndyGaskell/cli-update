@@ -44,6 +44,13 @@ if (php_sapi_name() != 'cli')
 // We are a valid entry point.
 const _JEXEC = 1;
 
+/**
+ * Set initial value for debug to improve "undefined notice" in fof.
+ * Do not change this value at this point, because fof causes a fatal error
+ * calling to a member function logAddLogger() on null.
+ */
+const JDEBUG = 0;
+
 // Define core extension id
 const CORE_EXTENSION_ID = 700;
 
@@ -309,12 +316,13 @@ class JoomlaCliUpdate extends JApplicationCli
 
 		$updateInformation = $jUpdate->getUpdateInformation();
 
-		if (!empty($updateInformation['object']))
+		if (!empty($updateInformation['hasUpdate']))
 		{
 			$packagefile = JInstallerHelper::downloadPackage($updateInformation['object']->downloadurl->_data);
-			$packagefile = JPATH_BASE . '/tmp/' . basename($packagefile);
-			$package = JInstallerHelper::unpack($packagefile, true);
-			JFolder::copy($package['extractdir'], JPATH_BASE, '', true, true);
+			$tmp_path    = $this->app->getCfg('tmp_path');
+			$packagefile = $tmp_path . '/' . $packagefile;
+			$package     = JInstallerHelper::unpack($packagefile, true);
+			JFolder::copy($package['extractdir'], JPATH_BASE, '', true);
 
 			$result = $jUpdate->finaliseUpgrade();
 
