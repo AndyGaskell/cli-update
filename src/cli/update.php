@@ -219,7 +219,7 @@ class JoomlaCliUpdate extends JApplicationCli
 			$filename = JInstallerHelper::downloadPackage($filename);
 		}
 
-		$tmp_path = $this->app->getCfg('tmp_path');
+		$tmp_path = $this->app->get('tmp_path');
 		$path     = $tmp_path . '/' . basename($filename);
 		$package  = JInstallerHelper::unpack($path, true);
 
@@ -320,7 +320,7 @@ class JoomlaCliUpdate extends JApplicationCli
 		if (!empty($updateInformation['hasUpdate']))
 		{
 			$packagefile = JInstallerHelper::downloadPackage($updateInformation['object']->downloadurl->_data);
-			$tmp_path    = $this->app->getCfg('tmp_path');
+			$tmp_path    = $this->app->get('tmp_path');
 			$packagefile = $tmp_path . '/' . $packagefile;
 			$package     = JInstallerHelper::unpack($packagefile, true);
 			JFolder::copy($package['extractdir'], JPATH_BASE, '', true);
