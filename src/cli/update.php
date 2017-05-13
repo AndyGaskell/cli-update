@@ -205,22 +205,23 @@ class JoomlaCliUpdate extends JApplicationCli
 	}
 
 	/**
-	 * Installs an extension (From directory or URL)
+	 * Installs an extension (From tmp_path or URL)
 	 *
-	 * @param   string  $path
+	 * @param   string  $filename
 	 * @param   string  $method
 	 *
 	 * @return  bool
 	 */
-	public function installExtension($path, $method)
+	public function installExtension($filename, $method)
 	{
 		if ($method == 'url')
 		{
-			$path = JInstallerHelper::downloadPackage($path);
+			$filename = JInstallerHelper::downloadPackage($filename);
 		}
 
-		$path    = JPATH_BASE . '/tmp/' . basename($path);
-		$package = JInstallerHelper::unpack($path, true);
+		$tmp_path = $this->app->getCfg('tmp_path');
+		$path     = $tmp_path . '/' . basename($filename);
+		$package  = JInstallerHelper::unpack($path, true);
 
 		if ($package['type'] === false)
 		{
